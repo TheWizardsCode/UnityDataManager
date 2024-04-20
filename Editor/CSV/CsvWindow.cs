@@ -13,7 +13,7 @@ namespace RogueWave.csv
 {
     public class CsvWindow : EditorWindow
     {
-        private string relativeDataDirectoryPath = "Resources/CSV/Data";
+        private static string relativeDataDirectoryPath = "Resources/CSV/Data";
         private Type dataType = typeof(TestScriptableObject);
 
         MonoScript script = null;
@@ -93,7 +93,7 @@ namespace RogueWave.csv
             }
         }
 
-        private string GetFilePath(string type, string fileName)
+        private static string GetFilePath(string type, string fileName)
         {
             return $"Assets/{relativeDataDirectoryPath}/{type}/{fileName}.csv";
         }
@@ -108,7 +108,6 @@ namespace RogueWave.csv
             }
         }
 
-        [MenuItem("Tools/Wizards Code/Data/Export All Data to CSV", priority = 100)]
         void ExportDataToCSV()
         {
             List<ScriptableObject> dataObjects = Resources.LoadAll<ScriptableObject>("").ToList();
@@ -125,7 +124,6 @@ namespace RogueWave.csv
             }
         }
 
-        [MenuItem("Tools/Wizards Code/Data/Destructive/Import All Recipes from CSV", priority = 200)]
         void ImportRecipeCSV()
         {
             string[] csvFiles = Directory.GetFiles(Path.GetFullPath($"{Application.dataPath}/{relativeDataDirectoryPath}/{dataType.Name}"), "*.csv");
@@ -140,7 +138,7 @@ namespace RogueWave.csv
             }
         }
 
-        void ImportFromCSV<T>(string type, string fileName) where T : ScriptableObject
+        static void ImportFromCSV<T>(string type, string fileName) where T : ScriptableObject
         {
             int count = 0;
             string path = GetFilePath(type, fileName);
@@ -253,7 +251,7 @@ namespace RogueWave.csv
             Debug.Log($"Completed export of {count} {fileName} to {path}");
         }
 
-        List<FieldInfo> GetSerializeFields(ScriptableObject dataObject)
+        static List<FieldInfo> GetSerializeFields(ScriptableObject dataObject)
         {
             List<FieldInfo> serializedFields = new List<FieldInfo>();
             Type type = dataObject.GetType();
