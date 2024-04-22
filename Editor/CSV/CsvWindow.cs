@@ -110,17 +110,28 @@ namespace RogueWave.csv
 
         void ExportDataToCSV()
         {
-            List<ScriptableObject> dataObjects = Resources.LoadAll<ScriptableObject>("").ToList();
-            List<Type> types = dataObjects.Select(r => r.GetType()).Distinct().ToList();
-
-            foreach (Type type in types)
+            if (script == null || dataType == null)
             {
-                ScriptableObject[] objectsOfType = dataObjects.Where(r => r.GetType() == type).ToArray();
+                Debug.LogError("ScriptableObject class is not set.");
+                return;
+            }
 
-                if (dataObjects.Count > 0)
+            string[] guids = AssetDatabase.FindAssets($"t:{script.name}");
+            List<ScriptableObject> dataObjects = new List<ScriptableObject>();
+
+            foreach (string guid in guids)
+            {
+                string path = AssetDatabase.GUIDToAssetPath(guid);
+                ScriptableObject obj = AssetDatabase.LoadAssetAtPath<ScriptableObject>(path);
+                if (obj != null)
                 {
-                    WriteCSV(objectsOfType, dataType.Name, type.Name);
+                    dataObjects.Add(obj);
                 }
+            }
+
+            if (dataObjects.Count > 0)
+            {
+                WriteCSV(dataObjects.ToArray(), dataType.Name, dataType.Name);
             }
         }
 
@@ -190,7 +201,7 @@ namespace RogueWave.csv
                     {
                         Debug.LogError($"Not yet saving newly created recipes: {recipe.name}");
                         count--;
-                        // AssetDatabase.CreateAsset(recipe, $"Assets/_Dev/Resources/Recipes/{recipe.GetType().Name}.asset");
+                        //AssetDatabase.CreateAsset(recipe, $"Assets/_Dev/Resources/Recipes/{recipe.GetType().Name}.asset");
                     }
                 }
             }
