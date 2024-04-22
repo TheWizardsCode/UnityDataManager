@@ -14,9 +14,9 @@ namespace RogueWave.csv
     public class CsvWindow : EditorWindow
     {
         private static string relativeDataDirectoryPath = "Resources/CSV/Data";
-        private Type dataType = typeof(TestScriptableObject);
+        private static Type dataType = typeof(TestScriptableObject);
 
-        MonoScript script = null;
+        static MonoScript script = null;
         UnityEngine.Object directoryObject = null;
 
         [MenuItem("Tools/Wizards Code/Data/CSV Import and Export")]
@@ -108,7 +108,7 @@ namespace RogueWave.csv
             }
         }
 
-        void ExportDataToCSV()
+        static void ExportDataToCSV()
         {
             if (script == null || dataType == null)
             {
@@ -158,6 +158,7 @@ namespace RogueWave.csv
 
             string[] lines = File.ReadAllLines(path);
 
+            bool updateSpreadsheet = false;
             bool isHeader = true;
             foreach (string line in lines)
             {
@@ -172,46 +173,56 @@ namespace RogueWave.csv
                     count++;
 
                     bool isUpdating = true;
-                    T recipe = AssetDatabase.LoadAssetAtPath<T>(values[2]);
-                    if (recipe == null)
+                    T dataObject = AssetDatabase.LoadAssetAtPath<T>(values[2]);
+                    if (dataObject == null)
                     {
                         isUpdating = false;
-                        recipe = ScriptableObject.CreateInstance<T>();
+                        dataObject = ScriptableObject.CreateInstance<T>();
                     }
 
-                    EditorUtility.SetDirty(recipe);
+                    EditorUtility.SetDirty(dataObject);
 
-                    List<FieldInfo> fields = GetSerializeFields(recipe);
+                    List<FieldInfo> fields = GetSerializeFields(dataObject);
                     for (int i = 0; i < fields.Count; i++)
                     {
                         FieldInfo field = fields[i];
                         string value = values[i + 3];
                         if (field.FieldType == typeof(string))
                         {
-                            field.SetValue(recipe, value.Trim('"'));
+                            field.SetValue(dataObject, value.Trim('"'));
                         }
                         else
                         {
                             //Debug.Log("Attempting to set " + field.Name + " to " + value + " of type " + field.FieldType);
-                            field.SetValue(recipe, Convert.ChangeType(value, field.FieldType));
+                            field.SetValue(dataObject, Convert.ChangeType(value, field.FieldType));
                         }
                     }
 
                     if (isUpdating == false)
                     {
-                        Debug.LogError($"Not yet saving newly created recipes: {recipe.name}");
                         count--;
-                        //AssetDatabase.CreateAsset(recipe, $"Assets/_Dev/Resources/Recipes/{recipe.GetType().Name}.asset");
+
+                        string filepath = $"Assets/{relativeDataDirectoryPath}/{dataObject.GetType().Name}.asset";
+                        Debug.Log($"Creating a new data object at {filepath}");
+                        AssetDatabase.CreateAsset(dataObject, filepath);
+
+                        updateSpreadsheet = true;
                     }
                 }
             }
             AssetDatabase.SaveAssets();
             AssetDatabase.Refresh();
 
-            Debug.Log($"Completed import of {count} {fileName} from {path}");
+            Debug.Log($"Completed import of {count} {fileName} from {path}.");
+
+            if (updateSpreadsheet)
+            {
+                Debug.Log("Re-exporting the spreadsheet as at least one new item was created.");
+                ExportDataToCSV();
+            }
         }
 
-        void WriteCSV(ScriptableObject[] dataObjects, string type, string fileName)
+        static void WriteCSV(ScriptableObject[] dataObjects, string type, string fileName)
         {
             int count = 0;
             string path = GetFilePath(type, fileName);
